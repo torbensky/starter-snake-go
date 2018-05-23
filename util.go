@@ -62,22 +62,22 @@ func isSame(a, b Point) bool {
 }
 
 // gets the moves that a snake can make
-func getAvailableMoves(you Snake, all SnakeList, width, height int) []Point {
+func getAvailableMoves(you Snake, all SnakeList, width, height int) []AvailableMove {
 	snakeHead := you.Body[0]
-	available := getSurroundingSquares(snakeHead)
+	surroundingMoves := getSurroundingMoves(snakeHead)
 
-	// remove any points that are the same as where a snake body part already is
+	// remove any moves that are the same as where a snake body part already is
 	for _, snek := range all {
 		for _, sb := range snek.Body {
-			available = removePoint(available, sb)
+			surroundingMoves = removeMovePoint(surroundingMoves, sb)
 		}
 	}
 
-	// remove any points that are outside of the board
-	available = removeOutOfBounds(available, width, height)
+	// remove any moves that are outside of the board
+	surroundingMoves = removeOutOfBounds(surroundingMoves, width, height)
 
-	// what's left should be only points that are safe
-	return available
+	// what's left should be only moves that are safe
+	return surroundingMoves
 }
 
 // removes any points from a list that have the same coordinates
@@ -94,25 +94,44 @@ func removePoint(from []Point, p Point) []Point {
 	return remainingPoints
 }
 
+// removes any moves from a list that have the same coordinates as the point
+func removeMovePoint(from []AvailableMove, p Point) []AvailableMove {
+	var remainingMoves []AvailableMove
+	for i, _ := range from {
+		// Skip any points with the same x,y
+		if isSame(from[i].p, p) {
+			continue
+		}
+		remainingMoves = append(remainingMoves, from[i])
+	}
+
+	return remainingMoves
+}
+
 // remove any points that are out of the board
-func removeOutOfBounds(from []Point, width, height int) []Point {
-	var inBounds []Point
-	for _, p := range from {
-		if isInBounds(p, width, height) {
-			inBounds = append(inBounds, p)
+func removeOutOfBounds(from []AvailableMove, width, height int) []AvailableMove {
+	var inBounds []AvailableMove
+	for _, am := range from {
+		if isInBounds(am.p, width, height) {
+			inBounds = append(inBounds, am)
 		}
 	}
 
 	return inBounds
 }
 
+type AvailableMove struct {
+	p Point
+	m string
+}
+
 // gets surrounding squares for a point
-func getSurroundingSquares(p Point) []Point {
-	return []Point{
-		Point{X: p.X + 1, Y: p.Y},
-		Point{X: p.X, Y: p.Y + 1},
-		Point{X: p.X + 1, Y: p.Y - 1},
-		Point{X: p.X - 1, Y: p.Y},
+func getSurroundingMoves(p Point) []AvailableMove {
+	return []AvailableMove{
+		{p: Point{X: p.X + 1, Y: p.Y}, m: "right"},
+		{p: Point{X: p.X, Y: p.Y + 1}, m: "up"},
+		{p: Point{X: p.X, Y: p.Y - 1}, m: "down"},
+		{p: Point{X: p.X - 1, Y: p.Y}, m: "left"},
 	}
 }
 
