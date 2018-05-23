@@ -22,7 +22,7 @@ func isInBounds(p Point, width, height int) bool {
 	}
 
 	// Check if y out of bounds
-	if p.Y > 0 || (-1*height) <= p.Y {
+	if p.Y < 0 || p.Y >= height {
 		return false
 	}
 
@@ -45,7 +45,9 @@ func isDeadlyCollision(p Point, sl *SnakeList, width, height int) bool {
 	// check if this point overlaps a snake body
 	for _, snek := range *sl {
 		for _, s := range snek.Body {
-			isSame(p, s)
+			if isSame(p, s) {
+				return true
+			}
 		}
 	}
 
@@ -62,22 +64,18 @@ func isSame(a, b Point) bool {
 }
 
 // gets the moves that a snake can make
-func getAvailableMoves(you Snake, all SnakeList, width, height int) []AvailableMove {
-	snakeHead := you.Body[0]
-	surroundingMoves := getSurroundingMoves(snakeHead)
-
-	// remove any moves that are the same as where a snake body part already is
-	for _, snek := range all {
-		for _, sb := range snek.Body {
-			surroundingMoves = removeMovePoint(surroundingMoves, sb)
+func getAvailableMoves(you Snake, all SnakeList, width, height int) []Point {
+	snakeHead := you.Head()
+	surrounding := getSurroundingSquares(snakeHead)
+	var available []Point
+	for _, s := range surrounding {
+		if !isDeadlyCollision(s, &all, width, height) {
+			available = append(available, s)
 		}
 	}
 
-	// remove any moves that are outside of the board
-	surroundingMoves = removeOutOfBounds(surroundingMoves, width, height)
-
-	// what's left should be only moves that are safe
-	return surroundingMoves
+	// what's left should be only points that are safe
+	return available
 }
 
 // removes any points from a list that have the same coordinates
@@ -94,45 +92,47 @@ func removePoint(from []Point, p Point) []Point {
 	return remainingPoints
 }
 
-// removes any moves from a list that have the same coordinates as the point
-func removeMovePoint(from []AvailableMove, p Point) []AvailableMove {
-	var remainingMoves []AvailableMove
-	for i, _ := range from {
-		// Skip any points with the same x,y
-		if isSame(from[i].p, p) {
-			continue
-		}
-		remainingMoves = append(remainingMoves, from[i])
-	}
-
-	return remainingMoves
-}
-
 // remove any points that are out of the board
-func removeOutOfBounds(from []AvailableMove, width, height int) []AvailableMove {
-	var inBounds []AvailableMove
-	for _, am := range from {
-		if isInBounds(am.p, width, height) {
-			inBounds = append(inBounds, am)
+func removeOutOfBounds(from []Point, width, height int) []Point {
+	var inBounds []Point
+	for _, p := range from {
+		if isInBounds(p, width, height) {
+			inBounds = append(inBounds, p)
 		}
 	}
 
 	return inBounds
 }
 
-type AvailableMove struct {
-	p Point
-	m string
+// gets surrounding squares for a point
+func getSurroundingSquares(p Point) []Point {
+	return []Point{
+		Point{X: p.X + 1, Y: p.Y}, // right
+		Point{X: p.X, Y: p.Y + 1}, // down
+		Point{X: p.X, Y: p.Y - 1}, // up
+		Point{X: p.X - 1, Y: p.Y}, // left
+	}
 }
 
-// gets surrounding squares for a point
-func getSurroundingMoves(p Point) []AvailableMove {
-	return []AvailableMove{
-		{p: Point{X: p.X + 1, Y: p.Y}, m: "right"},
-		{p: Point{X: p.X, Y: p.Y + 1}, m: "up"},
-		{p: Point{X: p.X, Y: p.Y - 1}, m: "down"},
-		{p: Point{X: p.X - 1, Y: p.Y}, m: "left"},
+func getMoveName(you Snake, p Point) string {
+	head := you.Head()
+	if head.X != p.X {
+		if p.X > head.X {
+			return "right"
+		} else {
+			return "left"
+		}
 	}
+	if head.Y != p.Y {
+		if p.Y > head.Y {
+			return "down"
+		} else {
+			return "up"
+		}
+	}
+
+	// just return up if the data is bad
+	return "up"
 }
 
 // finds the closest food to a point

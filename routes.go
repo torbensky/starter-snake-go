@@ -44,7 +44,6 @@ func Move(res http.ResponseWriter, req *http.Request) {
 	}
 
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-
 	respond(res, MoveResponse{
 		Move: directions[r.Intn(4)],
 	})
